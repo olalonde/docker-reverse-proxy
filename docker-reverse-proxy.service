@@ -1,0 +1,23 @@
+[Unit]
+Description=Docker reverse proxy
+Requires=docker.socket
+After=docker.socket
+
+# Make sure the port 2376 is not accessible from outside your
+# internal network. The connection to docker is not authenticated.
+[Service]
+ExecStartPre=/bin/sh -c "docker history olalond3/docker-reverse-proxy >/dev/null || docker pull olalond3/docker-reverse-proxy"
+ExecStart=/bin/bash -c "\
+  docker run \
+    --name docker-reverse-proxy \
+    -h %H \
+    -v /var/run/docker.sock:/var/run/docker.sock \
+    -p 2376:2375 \
+    olalond3/docker-reverse-proxy; \
+"
+
+[Install]
+WantedBy=multi-user.target
+
+[X-Fleet]
+Global=true

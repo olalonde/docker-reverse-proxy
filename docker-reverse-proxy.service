@@ -1,23 +1,25 @@
 [Unit]
-Description=Docker reverse proxy
-Requires=docker.socket
-After=docker.socket
+Description=Docker reverse proxy for Drone
+After=docker.service
 
 # Make sure the port 2376 is not accessible from outside your
 # internal network. The connection to docker is not authenticated.
 [Service]
-ExecStartPre=/bin/sh -c "docker history olalond3/docker-reverse-proxy >/dev/null || docker pull olalond3/docker-reverse-proxy"
-ExecStart=/bin/bash -c "\
-  docker run \
+Restart=always
+ExecStartPre=-/usr/bin/docker stop docker-reverse-proxy
+ExecStartPre=-/usr/bin/docker rm -f docker-reverse-proxy
+ExecStartPre=/usr/bin/docker pull olalond3/docker-reverse-proxy
+TimeoutStartSec=0
+ExecStartPre=-/usr/bin/docker kill docker-reverse-proxy
+ExecStartPre=-/usr/bin/docker rm docker-reverse-proxy
+ExecStart=/usr/bin/bash -c "\
+  /usr/bin/docker run \
     --name docker-reverse-proxy \
     -h %H \
     -v /var/run/docker.sock:/var/run/docker.sock \
     -p 2376:2375 \
-    olalond3/docker-reverse-proxy; \
-"
-
-[Install]
-WantedBy=multi-user.target
+    olalond3/docker-reverse-proxy"
+ExecStop=/usr/bin/docker stop docker-reverse-proxy
 
 [X-Fleet]
 Global=true
